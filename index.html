@@ -365,6 +365,34 @@ html,body{overscroll-behavior:none}
 }
 @media (pointer:coarse) and (min-width:821px){ #app{grid-template-columns:52px minmax(0,1fr) 300px} #app.hide-dock{grid-template-columns:52px minmax(0,1fr) 0} }
 @media (pointer:coarse) and (max-width:820px){ #app{grid-template-columns:52px minmax(0,1fr) 0} #dock{top:76px;bottom:56px} }
+/* panels never scroll sideways (a horizontal trackpad/mouse scroll used to slide their contents out of view) */
+#dock,#dock .pg,#dock .pg-b,#dock .pnl,#pool .pnl{overflow-x:hidden;overscroll-behavior-x:none;min-width:0}
+#dock .pnl input,#dock .pnl select{min-width:0;max-width:100%}
+/* ---------- Home screen ---------- */
+#home{position:fixed;inset:0;z-index:450;display:grid;grid-template-columns:260px minmax(0,1fr);background:var(--hdr);color:var(--fg)}
+#home[hidden]{display:none}
+#home .hm-side{background:var(--chrome);border-right:1px solid var(--line);padding:22px 18px;display:flex;flex-direction:column;gap:10px}
+#home .hm-logo{display:flex;align-items:center;gap:10px;font-size:18px;margin-bottom:14px}
+#home .hm-logo svg{width:34px;height:34px}
+#home .hm-big{width:100%;padding:10px 12px;font-size:13px;text-align:left}
+#home .hm-tip{margin-top:auto;font-size:11px;line-height:1.4}
+#home .hm-main{overflow:auto;padding:22px 30px}
+#home h2{font-size:15px;font-weight:600;margin:6px 0 12px}
+#home .hm-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:26px}
+#home .hm-pre{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;background:var(--chrome);border:1px solid var(--line);border-radius:8px;color:var(--fg);cursor:pointer}
+#home .hm-pre:hover,#home .hm-doc:hover{border-color:var(--accent)}
+#home .hm-sheet{display:block;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative;margin:auto 0}
+#home .hm-sheet i{position:absolute;inset:12% 14%;border:1px dashed #e040d0;opacity:.7}
+#home .hm-pre b{font-size:12px} #home small{color:var(--muted);font-size:11px}
+#home .hm-recent{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+#home .hm-doc{position:relative;background:var(--chrome);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:0}
+#home .hm-doc.cur{border-color:var(--accent)}
+#home .hm-doc b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#home .hm-thumb{height:120px;background:var(--paste);border-radius:4px;display:grid;place-items:center;overflow:hidden}
+#home .hm-thumb img{max-width:100%;max-height:100%;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+#home .hm-x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:11px;display:none}
+#home .hm-doc:hover .hm-x{display:block}
+@media (max-width:700px){ #home{grid-template-columns:1fr;grid-template-rows:auto 1fr} #home .hm-side{border-right:0;border-bottom:1px solid var(--line)} #home .hm-tip{display:none} }
 </style>
 
 <div id="app">
@@ -679,7 +707,10 @@ function renderLayoutGuides(){
       layoutG.appendChild(mkNS('line',{x1:x2,y1:y,x2:x2,y2:y+h,class:'lguide-c'})); }
   });
 }
+const newDocId=()=>'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let viewAuto=true;   /* true while the view is the automatic fit (no pan/zoom by the user yet) */
 function applyView(){
+  viewAuto=false;
   view.setAttribute('transform',`translate(${pan.x} ${pan.y}) scale(${zoom})`);
   if(textEd) positionTextEdit();
   if(areaEd) positionAreaEdit();
@@ -695,7 +726,7 @@ function setZoom(z){const r=svg.getBoundingClientRect();zoomAt(z/zoom,r.width/2,
 function fitRect(b){
   const r=svg.getBoundingClientRect(); if(!r.width||!b) return;
   zoom=clamp(Math.min((r.width-70)/b.w,(r.height-70)/b.h),0.03,16);
-  pan.x=(r.width-b.w*zoom)/2-b.x*zoom; pan.y=(r.height-b.h*zoom)/2-b.y*zoom; applyView();
+  pan.x=(r.width-b.w*zoom)/2-b.x*zoom; pan.y=(r.height-b.h*zoom)/2-b.y*zoom; applyView(); viewAuto=true;
 }
 const fit=()=>fitRect(AB());
 const fitAll=()=>fitRect(boardsUnion());
@@ -848,7 +879,7 @@ const gridSnap=v=>opts.snapGrid?Math.round(v/opts.gridSize)*opts.gridSize:v;
 
 /* ---------- history ---------- */
 const hist=[]; let hi=-1;
-const snap=()=>({html:content.innerHTML,defs:userDefs.innerHTML,boards:JSON.parse(JSON.stringify(doc.boards)),ab:doc.ab,bg:doc.bg,name:doc.name,guides:JSON.parse(JSON.stringify(doc.guides)),margins:{...doc.margins},pstyles:doc.pstyles?JSON.parse(JSON.stringify(doc.pstyles)):null,master:doc.master?{...doc.master}:null});
+const snap=()=>({id:doc.id||(doc.id=newDocId()),html:content.innerHTML,defs:userDefs.innerHTML,boards:JSON.parse(JSON.stringify(doc.boards)),ab:doc.ab,bg:doc.bg,name:doc.name,guides:JSON.parse(JSON.stringify(doc.guides)),margins:{...doc.margins},pstyles:doc.pstyles?JSON.parse(JSON.stringify(doc.pstyles)):null,master:doc.master?{...doc.master}:null});
 function commit(label){
   updateFxRegions();
   hist.splice(hi+1); const s=snap(); s.label=label||'Edit'; hist.push(s); if(hist.length>80) hist.shift(); hi=hist.length-1;
@@ -856,7 +887,7 @@ function commit(label){
 }
 function restore(s){
   const ids=sel.map(e=>e.id);
-  content.innerHTML=s.html; userDefs.innerHTML=s.defs; doc.boards=JSON.parse(JSON.stringify(s.boards)); doc.ab=Math.min(s.ab||0,doc.boards.length-1); doc.bg=s.bg; doc.name=s.name||doc.name;
+  content.innerHTML=s.html; userDefs.innerHTML=s.defs; if(s.id) doc.id=s.id; doc.boards=JSON.parse(JSON.stringify(s.boards)); doc.ab=Math.min(s.ab||0,doc.boards.length-1); doc.bg=s.bg; doc.name=s.name||doc.name;
   doc.guides=JSON.parse(JSON.stringify(s.guides||[])); doc.margins={...doc.margins,...(s.margins||{})}; if(s.pstyles) doc.pstyles=JSON.parse(JSON.stringify(s.pstyles)); doc.master=s.master?{...s.master}:null;
   if(iso){ const g=iso.id&&document.getElementById(iso.id); if(g&&kindOf(g)==='g') iso=g; else exitIso(true); }
   sel=ids.map(id=>document.getElementById(id)).filter(e=>e&&e.parentNode===scopeRoot());
@@ -867,7 +898,7 @@ function redo(){ if(hi<hist.length-1){hi++;restore(hist[hi]);toast('Redo '+(hist
 function gotoHist(i){ if(i<0||i>=hist.length||i===hi) return; hi=i; restore(hist[hi]); }
 const KEY='garis-vektor-doc-v2';
 let saveWarned=false;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){ if(!saveWarned&&e&&e.name==='QuotaExceededError'){saveWarned=true;toast('Autosave paused: document too large for browser storage. Use File › Save.');} }}
+function save(){if(typeof scheduleRecent==='function')scheduleRecent();try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){ if(!saveWarned&&e&&e.name==='QuotaExceededError'){saveWarned=true;toast('Autosave paused: document too large for browser storage. Use File › Save.');} }}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&typeof s.html==='string')return s;}catch(e){}return null;}
 
 /* ---------- colour ---------- */
@@ -916,7 +947,7 @@ function importSVG(text,replace,fname){
   let vb=(root.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number); if(vb.length!==4||vb.some(isNaN)) vb=null;
   const w=parseFloat(root.getAttribute('width'))||(vb?vb[2]:0), h=parseFloat(root.getAttribute('height'))||(vb?vb[3]:0);
   if(replace){
-    exitIso(true); content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+    exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
     if(meta&&Array.isArray(meta.boards)&&meta.boards.length){ doc.boards=meta.boards; doc.ab=meta.ab||0; doc.bg=meta.bg||'#ffffff'; doc.guides=meta.guides||[]; if(meta.margins)doc.margins={...doc.margins,...meta.margins}; if(meta.pstyles)doc.pstyles=meta.pstyles; doc.master=meta.master||null; }
     else { doc.boards=[{x:0,y:0,w:r2(vb?vb[2]:(w||800)),h:r2(vb?vb[3]:(h||600)),name:'Artboard 1'}]; doc.ab=0; doc.guides=[]; }
     doc.name=(meta&&meta.name)||(fname?fname.replace(/\.svg$/i,''):doc.name); renderBoards();
@@ -959,6 +990,12 @@ function buildSVG(bi,native){
 }
 let dlCap; const dlReady=(window.claude&&window.claude.use)?window.claude.use('downloads').then(d=>dlCap=d).catch(()=>dlCap=null):Promise.resolve(dlCap=null);
 async function download(blob,fname){
+  /* Android app (APK): hand the file to the native side, which writes it to Download/Garis Vektor */
+  if(window.GVAndroid&&window.GVAndroid.saveFile){
+    try{ const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(blob);});
+      const where=window.GVAndroid.saveFile(fname,blob.type||'',b64); toast(where?'Saved: '+where:'Could not save '+fname); }catch(e){ toast('Could not save '+fname); }
+    return;
+  }
   if(dlCap===undefined) await dlReady;
   if(dlCap){
     try{await dlCap.save({filename:fname,data:blob});toast('Saved: '+fname);}
@@ -2168,7 +2205,7 @@ async function openPSD(file){
   toast('Opening PSD…');
   try{ await loadScript(AGPSD_URL); }catch(e){ toast('PSD library could not be loaded (offline?)'); return; }
   let psd; try{ psd=agPsd.readPsd(await file.arrayBuffer(),{skipThumbnail:true}); }catch(e){ toast('Could not read that PSD file'); return; }
-  if(pen)penFinish(); exitIso(true); content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+  if(pen)penFinish(); exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
   doc.boards=[{x:0,y:0,w:psd.width,h:psd.height,name:'Canvas'}]; doc.ab=0; doc.bg='#ffffff'; doc.guides=[]; doc.name=file.name.replace(/\.psd$/i,'');
   const leaves=[]; const walk=(list,hidden)=>(list||[]).forEach(l=>{ if(l.children) walk(l.children,hidden||l.hidden); else if(l.canvas&&l.canvas.width&&l.canvas.height) leaves.push({l,hidden:hidden||l.hidden}); });
   walk(psd.children,false);
@@ -2190,7 +2227,7 @@ function openAnyFile(f){
 }
 function newBlankFromImage(f){
   const rd=new FileReader(); rd.onload=()=>{ const img=new Image(); img.onload=()=>{
-    exitIso(true); content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+    exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
     doc.boards=[{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight,name:'Canvas'}]; doc.ab=0; doc.guides=[]; doc.name=f.name.replace(/\.[^.]+$/,'');
     const el=newEl('image',{x:0,y:0,width:img.naturalWidth,height:img.naturalHeight,preserveAspectRatio:'none',href:rd.result},'pixel'); el.dataset.name='Background';
     content.appendChild(el); renderBoards(); commit('Open Image'); fit();
@@ -2455,7 +2492,7 @@ function menuItems(name){
   const n=sel.length, has=n>0, txt=textTargets().length>0, area=sel.some(el=>kindOf(el)==='area'), fr=sel.some(el=>kindOf(el)==='frame');
   const panelItem=(id,k)=>M(PANELS[id].title,'',k,{on:isPanelShown(id),fn:()=>togglePanel(id)});
   switch(name){
-  case 'File': return [M('New...','newDoc','Alt+Ctrl+N'),M('New Book...','newBook'),M('Open...','open','Ctrl+O'),SEP,M('Save','save','Ctrl+S'),M('Save As...','saveAs','Shift+Ctrl+S'),SEP,M('Place...','place','Shift+Ctrl+P',{}),
+  case 'File': return [M('Home','home','Alt+Ctrl+H'),SEP,M('New...','newDoc','Alt+Ctrl+N'),M('New Book...','newBook'),M('Open...','open','Ctrl+O'),SEP,M('Save','save','Ctrl+S'),M('Save As...','saveAs','Shift+Ctrl+S'),SEP,M('Place...','place','Shift+Ctrl+P',{}),
     M('Export',null,null,{sub:[M('Download / Export...','exportPng','Ctrl+E'),SEP,M('Export As PNG...','exportPng'),M('Export As SVG (artboard)...','exportSvg'),M('Export As PDF (all pages)...','exportPdf','Alt+Ctrl+E'),M('Export As PSD (Photoshop layers)...','exportPsd')]}),SEP,
     M('Document Setup...','docSetup','Alt+Ctrl+P'),M('Document Info','docInfo')];
   case 'Edit': return [M('Undo '+(hi>0?hist[hi].label:''),'undo','Ctrl+Z',{dis:hi<=0}),M('Redo '+(hi<hist.length-1?hist[hi+1].label:''),'redo','Shift+Ctrl+Z',{dis:hi>=hist.length-1}),SEP,
@@ -3524,7 +3561,7 @@ function newBookDialog(){
     <div class="row" style="justify-content:space-between"><span class="muted">Manuscript — paste text, or import a file. Use <b># Chapter</b>, <b>## Section</b>, <b>&gt; quote</b>, <b>- list</b>, <b>**bold**</b>, <b>*italic*</b>, <b>---</b> new page.</span><button class="btn sm" type="button" id="nbFile">Import .docx / .txt / .md…</button></div>
     <textarea id="nbText" style="height:160px;font:12px/1.5 var(--ui)" placeholder="# Chapter 1&#10;Paste your manuscript here…"></textarea>`,{size:'wide',okLabel:'Create Book',onOk:()=>{
       const [,w,h]=SZ[+$('#nbSize').value], title=$('#nbTitle').value.trim()||'My Book';
-      if(pen)penFinish(); exitIso(true); content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+      if(pen)penFinish(); exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
       doc.boards=[{x:0,y:0,w,h,name:'Page 1'}]; doc.ab=0; doc.bg='#ffffff'; doc.guides=[]; doc.name=title;
       Object.assign(doc.margins,{on:true,t:+$('#nbT').value||54,b:+$('#nbB').value||60,l:+$('#nbO').value||42,r:+$('#nbI').value||54,cols:1,gut:16,mirror:true});
       doc.master={on:$('#nbNum').checked,pos:'bo',start:1,font:$('#nbFont').value,size:Math.max(8,(+$('#nbFs').value||12)-2),color:'#666666',header:$('#nbHead').checked?title:'',skip:1,digits:$('#nbDig').value,fmt:'{n}'};
@@ -4233,6 +4270,79 @@ function buildTouchBar(){
     ({undo:CMDS.undo,redo:CMDS.redo,del:CMDS.del,dup:CMDS.duplicate,fit:CMDS.fit})[k](); });
 }
 if(COARSE){ buildTouchBar(); document.documentElement.classList.add('touch'); }
+/* =================== p12 · Home screen: new / open / recent documents (shown at every start) =================== */
+/* recent documents live in IndexedDB (snapshots can hold images, too big for localStorage) */
+const RECENT_MAX=12;
+let idbP=null;
+function idb(){
+  if(!idbP) idbP=new Promise((res,rej)=>{ try{ const r=indexedDB.open('garis-vektor',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('recent',{keyPath:'id'}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } });
+  return idbP;
+}
+async function recentAll(){ try{ const db=await idb(); return await new Promise((res,rej)=>{ const q=db.transaction('recent').objectStore('recent').getAll(); q.onsuccess=()=>res(q.result.sort((a,b)=>b.time-a.time)); q.onerror=()=>rej(q.error); }); }catch(e){ return []; } }
+async function recentPut(rec){ try{ const db=await idb(); const tx=db.transaction('recent','readwrite'), st=tx.objectStore('recent'); st.put(rec);
+  await new Promise(r=>tx.oncomplete=r); const all=await recentAll(); if(all.length>RECENT_MAX){ const t2=db.transaction('recent','readwrite'); all.slice(RECENT_MAX).forEach(x=>t2.objectStore('recent').delete(x.id)); } }catch(e){} }
+async function recentDel(id){ try{ const db=await idb(); const tx=db.transaction('recent','readwrite'); tx.objectStore('recent').delete(id); await new Promise(r=>tx.oncomplete=r); }catch(e){} }
+let recentT=null;
+function scheduleRecent(){ clearTimeout(recentT); recentT=setTimeout(()=>{ if(!content.children.length) return; const s=snap(); recentPut({id:s.id,name:doc.name||'Untitled',time:Date.now(),snap:s}); },1500); }
+
+/* small picture of a document's first artboard, drawn from its snapshot */
+function snapThumb(s){
+  const b=(s.boards&&s.boards[0])||{x:0,y:0,w:800,h:600};
+  const svgTxt=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${b.w}" height="${b.h}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><defs>${s.defs||''}</defs><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${s.bg==='transparent'?'#fff':(s.bg||'#fff')}"/>${s.html||''}</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgTxt);
+}
+function openSnap(s){
+  if(pen) penFinish(); exitIso(true);
+  restore(s); doc.id=s.id||newDocId();
+  hist.splice(0); hist.push({...snap(),label:'Open'}); hi=0; fit(); refreshUI(); toast('Opened '+doc.name);
+}
+function quickNew(w,h,n,layout,name){
+  if(pen) penFinish(); exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+  doc.boards=Array.from({length:n},(_,i)=>({x:i*(w+40),y:0,w,h,name:(layout?'Page ':'Artboard ')+(i+1)})); doc.ab=0; doc.bg='#ffffff'; doc.guides=[];
+  doc.name=name; doc.margins.on=!!layout; delete doc.margins.byWs;
+  renderBoards(); commit('New Document'); fit(); toast('New document: '+name);
+}
+
+const HOME_PRESETS=[['A4 Portrait',595,842,1,0],['A4 Landscape',842,595,1,0],['F4 / Folio',612,936,1,0],['A5 Book (8 pages)',420,595,8,1],['Letter',612,792,1,0],['Instagram Post',1080,1080,1,0],['Instagram Story',1080,1920,1,0],['HD 1920×1080',1920,1080,1,0]];
+let homeEl=null;
+async function showHome(){
+  closeMenus(); if(!modal.hidden) closeModal(true);
+  if(!homeEl){ homeEl=document.createElement('div'); homeEl.id='home'; document.body.appendChild(homeEl);
+    homeEl.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagation(); hideHome(); } }); }
+  const cur=content.children.length?{...snap()}:null;
+  homeEl.innerHTML=`<div class="hm-side">
+      <div class="hm-logo">${$('#menubar .logo').innerHTML}<b>Garis Vektor</b></div>
+      <button class="btn primary hm-big" type="button" data-h="new">＋ New file…</button>
+      <button class="btn hm-big" type="button" data-h="open">📂 Open file…</button>
+      ${cur?`<button class="btn hm-big" type="button" data-h="cont">↩ Continue “${esc(doc.name)}”</button>`:''}
+      <div class="hm-tip muted">Open this screen again: File › Home or click the logo.</div>
+    </div>
+    <div class="hm-main">
+      <h2>Start a new file</h2>
+      <div class="hm-presets">${HOME_PRESETS.map(([n,w,h,c,l],i)=>{ const s=120/Math.max(w,h); return `<button type="button" class="hm-pre" data-p="${i}"><span class="hm-sheet" style="width:${Math.round(w*s)}px;height:${Math.round(h*s)}px">${l?'<i></i>':''}</span><b>${n}</b><small>${toU(w)} × ${toU(h)} ${uL()}${c>1?' · '+c+' pages':''}</small></button>`; }).join('')}</div>
+      <h2>Recent</h2>
+      <div class="hm-recent" id="hmRecent"><div class="muted">Loading…</div></div>
+    </div>`;
+  homeEl.hidden=false;
+  homeEl.querySelector('[data-h="new"]').onclick=()=>{ hideHome(); newDocDialog(); };
+  homeEl.querySelector('[data-h="open"]').onclick=()=>{ hideHome(); $('#fileOpen').click(); };
+  const c=homeEl.querySelector('[data-h="cont"]'); if(c) c.onclick=hideHome;
+  homeEl.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ const [n,w,h,cnt,l]=HOME_PRESETS[+b.dataset.p]; hideHome(); quickNew(w,h,cnt,l,n.replace(/ \(.*\)$/,'')); });
+  const list=await recentAll(), box=homeEl.querySelector('#hmRecent');
+  if(!list.length){ box.innerHTML='<div class="muted">No recent files yet. Files you work on appear here.</div>'; return; }
+  box.innerHTML=list.map(r=>`<div class="hm-doc${r.id===doc.id?' cur':''}" data-r="${esc(r.id)}" title="${esc(r.name)}"><div class="hm-thumb"><img alt="" src="${snapThumb(r.snap)}"></div>
+    <b>${esc(r.name)}</b><small>${new Date(r.time).toLocaleString()}${r.id===doc.id?' · open now':''}</small><button type="button" class="hm-x" title="Remove from list">✕</button></div>`).join('');
+  box.querySelectorAll('[data-r]').forEach(el=>{ const r=list.find(x=>x.id===el.dataset.r);
+    el.onclick=e=>{ if(e.target.closest('.hm-x')){ e.stopPropagation(); recentDel(r.id); el.remove(); return; } hideHome(); if(r.id!==doc.id) openSnap(r.snap); };
+  });
+}
+function hideHome(){ if(homeEl) homeEl.hidden=true; }
+CMDS.home=showHome;
+$('#menubar .logo').style.cursor='pointer'; $('#menubar .logo').addEventListener('click',showHome);
+setTimeout(showHome,0);   /* every start opens on Home, like Illustrator */
+/* while Home is open, keys belong to it (Esc = continue) */
+document.addEventListener('keydown',e=>{ if(homeEl&&!homeEl.hidden&&modal.hidden){ if(e.key==='Escape') hideHome(); e.stopImmediatePropagation(); } },true);
 /* =================== p5 · dialogs & boot =================== */
 const safeName=()=>(doc.name||'artwork').replace(/[\\/:*?"<>|]+/g,'-');
 const FORMATS=[
@@ -4304,7 +4414,7 @@ function newDocDialog(){
     <label class="chk"><input type="checkbox" id="ndMar"> Margins & columns (page layout)</label>
     <p class="muted" style="margin:0">The current canvas is cleared. You can still get it back with Ctrl+Z.</p>`,{okLabel:'Create',onOk:()=>{
       const w=Math.max(1,Math.round(fromU($('#ndW').value))||800), h=Math.max(1,Math.round(fromU($('#ndH').value))||600), n=clamp(+$('#ndN').value|0,1,50);
-      if(pen)penFinish(); exitIso(true); content.replaceChildren(); userDefs.replaceChildren(); sel=[];
+      if(pen)penFinish(); exitIso(true); doc.id=null; content.replaceChildren(); userDefs.replaceChildren(); sel=[];
       doc.boards=Array.from({length:n},(_,i)=>({x:i*(w+40),y:0,w,h,name:($('#ndMar').checked?'Page ':'Artboard ')+(i+1)})); doc.ab=0; doc.bg='#ffffff'; doc.guides=[];
       doc.name=$('#ndName').value.trim()||'Untitled'; doc.margins.on=$('#ndMar').checked;
       renderBoards(); commit('New Document'); fit(); toast('New document created');
@@ -4457,7 +4567,7 @@ buildTools(); buildPalette(); renderMenuBar();
 const saved=load();
 if(saved){
   content.innerHTML=saved.html; userDefs.innerHTML=saved.defs||''; doc.boards=saved.boards||[{x:0,y:0,w:saved.w||800,h:saved.h||600,name:'Artboard 1'}]; doc.ab=Math.min(saved.ab||0,doc.boards.length-1);
-  doc.bg=saved.bg||'#ffffff'; doc.name=saved.name||'Untitled-1'; doc.guides=saved.guides||[]; if(saved.margins) doc.margins={...doc.margins,...saved.margins}; if(saved.pstyles) doc.pstyles=saved.pstyles; if(saved.master) doc.master=saved.master;
+  doc.bg=saved.bg||'#ffffff'; doc.name=saved.name||'Untitled-1'; doc.id=saved.id||null; doc.guides=saved.guides||[]; if(saved.margins) doc.margins={...doc.margins,...saved.margins}; if(saved.pstyles) doc.pstyles=saved.pstyles; if(saved.master) doc.master=saved.master;
   refreshUid(); renderBoards(); hist.push({...snap(),label:'Open'}); hi=0;
 } else {
   const d=new DOMParser().parseFromString(SAMPLE,'image/svg+xml');
@@ -4472,6 +4582,13 @@ $('#stHint').textContent=hintFor(tool);
 renderCtl(); refreshUI();
 requestAnimationFrame(()=>{fit(); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{relayoutAll();drawOverlay();refreshUI();});});
 let rzT=null; window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{drawRulers();drawOverlay();},60);});
+/* keep the artboard centred when the canvas area changes size (window maximised after start, panels shown/hidden):
+   until the user pans or zooms, the view is re-fitted; afterwards the centre of the view stays put */
+let lastCanvasSize=null;
+new ResizeObserver(()=>{ const r=svg.getBoundingClientRect(); if(!r.width||!r.height) return;
+  if(lastCanvasSize&&(lastCanvasSize.w!==r.width||lastCanvasSize.h!==r.height)){
+    if(viewAuto) fit(); else { pan.x+=(r.width-lastCanvasSize.w)/2; pan.y+=(r.height-lastCanvasSize.h)/2; applyView(); } }
+  lastCanvasSize={w:r.width,h:r.height}; }).observe(svg);
 
 /* ---------- offline: cache the app (works when served over http/https, e.g. on a tablet) ---------- */
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(()=>{});
