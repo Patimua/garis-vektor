@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Garis Vektor</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%233b424c'/%3E%3Cstop offset='1' stop-color='%23252a31'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='22' height='22' rx='5' fill='url(%23b)'/%3E%3Cpath d='M6 17.5V9M18 6.5V15' stroke='%238b95a1' stroke-width='.55'/%3E%3Ccircle cx='6' cy='9' r='.75' fill='%238b95a1'/%3E%3Ccircle cx='18' cy='15' r='.75' fill='%238b95a1'/%3E%3Cpath d='M6 17.5C6 9 18 15 18 6.5' fill='none' stroke='%236fc7b4' stroke-width='2' stroke-linecap='round'/%3E%3Cg fill='%23eef1f4' stroke='%23252a31' stroke-width='.6'%3E%3Crect x='4.5' y='16' width='3' height='3'/%3E%3Crect x='16.5' y='5' width='3' height='3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cdefs%3E%3ClinearGradient id=%22gvbg%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%233a4150%22/%3E%3Cstop offset=%221%22 stop-color=%22%23232833%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%221%22 y=%221%22 width=%2222%22 height=%2222%22 rx=%225.2%22 fill=%22url(%23gvbg)%22/%3E%3Cpath d=%22M17.2 8.2A6.2 6.2 0 1 0 18.2 13H12.6%22 fill=%22none%22 stroke=%22%237fd1c0%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Crect x=%2210.9%22 y=%2211.3%22 width=%223.4%22 height=%223.4%22 fill=%22%23f4f6f8%22 stroke=%22%23232833%22 stroke-width=%22.55%22/%3E%3Ccircle cx=%2217.2%22 cy=%228.2%22 r=%221.15%22 fill=%22%23f2b45a%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -398,7 +398,7 @@ html,body{overscroll-behavior:none}
 
 <div id="app">
   <header id="menubar">
-    <div class="logo" title="Garis Vektor"><svg viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="5" fill="#2f353d"/><path d="M6 17.5V9M18 6.5V15" stroke="#8b95a1" stroke-width=".6"/><path d="M6 17.5C6 9 18 15 18 6.5" fill="none" stroke="#6fc7b4" stroke-width="2" stroke-linecap="round"/><g fill="#eef1f4"><rect x="4.5" y="16" width="3" height="3"/><rect x="16.5" y="5" width="3" height="3"/></g></svg></div>
+    <div class="logo" title="Garis Vektor"><svg viewBox="0 0 24 24"><defs><linearGradient id="gvbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4150"/><stop offset="1" stop-color="#232833"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="5.2" fill="url(#gvbg)"/><path d="M17.2 8.2A6.2 6.2 0 1 0 18.2 13H12.6" fill="none" stroke="#7fd1c0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="10.9" y="11.3" width="3.4" height="3.4" fill="#f4f6f8" stroke="#232833" stroke-width=".55"/><circle cx="17.2" cy="8.2" r="1.15" fill="#f2b45a"/></svg></div>
     <nav id="menus"></nav>
     <div class="mb-right">
       <button class="wsbtn" id="wsBtn" type="button" title="Switch workspace"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="4" height="10"/><rect x="7" y="1" width="4" height="4"/><rect x="7" y="7" width="4" height="4"/></svg><span id="wsName">Essentials</span> ▾</button>
