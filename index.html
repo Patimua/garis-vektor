@@ -2366,6 +2366,30 @@ function exportDialog(preset){
   });
   sync();
 }
+
+/* ---------- Print: only the artboards, one per sheet, sheet size = artboard size (like Illustrator File › Print) ----------
+   Ctrl+P / File › Print. The browser's own print would capture the whole editor window instead. */
+function printDoc(which){
+  if(textEd) commitText(); if(areaEd) commitArea();
+  const list=which==='active'?[doc.ab]:doc.boards.map((_,i)=>i);
+  let area=$('#printArea'); if(!area){ area=document.createElement('div'); area.id='printArea'; document.body.appendChild(area); }
+  let css=$('#printCss'); if(!css){ css=document.createElement('style'); css.id='printCss'; document.head.appendChild(css); }
+  const sizes=[];
+  area.innerHTML=list.map((bi,k)=>{
+    const b=doc.boards[bi], key=r2(b.w)+'x'+r2(b.h); if(!sizes.includes(key)) sizes.push(key);
+    /* each page gets its own ids so gradients, masks and clips never point into the hidden editor */
+    const s=buildExportSVG(bi,{}).replace(/\sid="([^"]+)"/g,` id="pr${k}_$1"`).replace(/url\(#/g,`url(#pr${k}_`).replace(/href="#/g,`href="#pr${k}_`);
+    return `<div class="prPage" style="page:pg${sizes.indexOf(key)};width:${r2(b.w)}pt;height:${r2(b.h)}pt">${s}</div>`;
+  }).join('');
+  area.querySelectorAll('svg').forEach(sv=>{ sv.setAttribute('width','100%'); sv.setAttribute('height','100%'); sv.setAttribute('preserveAspectRatio','xMidYMid meet'); });
+  css.textContent=sizes.map((k,i)=>{ const [w,h]=k.split('x'); return `@page pg${i}{size:${w}pt ${h}pt;margin:0}`; }).join('\n')+
+    `\n@page{margin:0}\n@media screen{#printArea{display:none}}\n@media print{html,body{background:#fff!important;height:auto!important;overflow:visible!important}body>*:not(#printArea){display:none!important}#printArea{display:block}.prPage{break-after:page;overflow:hidden;position:relative}.prPage:last-child{break-after:auto}.prPage svg{display:block}}`;
+  const clean=()=>{ area.innerHTML=''; window.removeEventListener('afterprint',clean); };
+  window.addEventListener('afterprint',clean);
+  /* let fonts and images in the copies settle before the print dialog takes its snapshot */
+  const imgs=[...area.querySelectorAll('image')];
+  Promise.all([document.fonts?document.fonts.ready:0]).then(()=>setTimeout(()=>{ try{ window.print(); }catch(e){ toast('Printing is not available here — use Download › PDF'); clean(); } },imgs.length?400:60));
+}
 /* =================== p3 · toolbar, palette, menus, control bar, panels, keyboard, dialogs =================== */
 const I=(d)=>`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">${d}</svg>`;
 const TI={
@@ -2495,7 +2519,7 @@ function menuItems(name){
   switch(name){
   case 'File': return [M('Home','home','Alt+Ctrl+H'),SEP,M('New...','newDoc','Alt+Ctrl+N'),M('New Book...','newBook'),M('Open...','open','Ctrl+O'),SEP,M('Save','save','Ctrl+S'),M('Save As...','saveAs','Shift+Ctrl+S'),SEP,M('Place...','place','Shift+Ctrl+P',{}),
     M('Export',null,null,{sub:[M('Download / Export...','exportPng','Ctrl+E'),SEP,M('Export As PNG...','exportPng'),M('Export As SVG (artboard)...','exportSvg'),M('Export As PDF (all pages)...','exportPdf','Alt+Ctrl+E'),M('Export As PSD (Photoshop layers)...','exportPsd')]}),SEP,
-    M('Document Setup...','docSetup','Alt+Ctrl+P'),M('Document Info','docInfo')];
+    M('Print...','print','Ctrl+P'),SEP,M('Document Setup...','docSetup','Alt+Ctrl+P'),M('Document Info','docInfo')];
   case 'Edit': return [M('Undo '+(hi>0?hist[hi].label:''),'undo','Ctrl+Z',{dis:hi<=0}),M('Redo '+(hi<hist.length-1?hist[hi+1].label:''),'redo','Shift+Ctrl+Z',{dis:hi>=hist.length-1}),SEP,
     M('Cut','cut','Ctrl+X',{dis:!has}),M('Copy','copy','Ctrl+C',{dis:!has}),M('Paste','paste','Ctrl+V'),M('Paste in Front','pasteFront','Ctrl+F'),M('Paste in Back','pasteBack','Ctrl+B'),M('Paste in Place','pastePlace','Shift+Ctrl+V'),M('Clear','del','Del',{dis:!has}),SEP,
     M('Duplicate','duplicate','',{dis:!has}),SEP,M('Edit Colors',null,null,{sub:[M('Invert Colors','invertColors','',{dis:!has}),M('Convert to Grayscale','grayColors','',{dis:!has})]}),SEP,
@@ -4339,7 +4363,7 @@ async function showHome(){
   });
 }
 function hideHome(){ if(homeEl) homeEl.hidden=true; }
-CMDS.home=showHome;
+CMDS.home=showHome; CMDS.print=()=>printDoc('all');
 $('#menubar .logo').style.cursor='pointer'; $('#menubar .logo').addEventListener('click',showHome);
 setTimeout(showHome,0);   /* every start opens on Home, like Illustrator */
 /* while Home is open, keys belong to it (Esc = continue) */
